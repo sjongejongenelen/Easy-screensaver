@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sisi Pool Saver</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="screensaver" id="screen" aria-label="Sisi zwembad screensaver">
+      <audio id="music" src="assets/sisi-song-def.wav" loop preload="auto"></audio>
+      <canvas id="water" aria-hidden="true"></canvas>
+
+      <div class="floater" id="floater" aria-hidden="true">
+        <img class="raft" src="assets/sisi-luchtbed.png" alt="">
+      </div>
+
+      <div class="corner-flash" id="cornerFlash" aria-hidden="true"></div>
+
+      <div class="hud" aria-live="polite">
+        <div class="hit-count">
+          <span id="cornerHits">0</span>
+          <span>corner hits</span>
+        </div>
+        <div class="controls">
+          <button id="audioButton" type="button" aria-label="Geluid aanzetten" title="Geluid">
+            <svg class="audio-on-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 5 6 9H3v6h3l5 4z"></path>
+              <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+              <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+            </svg>
+            <svg class="audio-off-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 5 6 9H3v6h3l5 4z"></path>
+              <path d="M16 9l5 5"></path>
+              <path d="M21 9l-5 5"></path>
+            </svg>
+          </button>
+          <button id="resetButton" type="button" aria-label="Reset route" title="Reset route">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+              <path d="M3 4v6h6"></path>
+            </svg>
+          </button>
+          <button id="pauseButton" type="button" aria-label="Pauze" title="Pauze">
+            <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14"></path>
+              <path d="M16 5v14"></path>
+            </svg>
+            <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+          </button>
+          <button id="fullscreenButton" type="button" aria-label="Volledig scherm" title="Volledig scherm">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 3H3v5"></path>
+              <path d="M16 3h5v5"></path>
+              <path d="M21 16v5h-5"></path>
+              <path d="M3 16v5h5"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script src="screensaver.js"></script>
+  </body>
+</html>
