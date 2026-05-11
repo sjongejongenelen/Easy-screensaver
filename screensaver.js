@@ -237,10 +237,10 @@ function resizeCanvas() {
 function pickCornerRoute(fromX = state.route?.startX ?? 0, fromY = state.route?.startY ?? 0) {
   const maxX = Math.max(1, state.maxX);
   const maxY = Math.max(1, state.maxY);
-  const baseSpeed = clamp(Math.hypot(state.width, state.height) * 0.045, 68, 126);
+  const baseSpeed = clamp(Math.hypot(state.width, state.height) * 0.037, 54, 106);
   const currentTurnX = Math.floor(fromX / maxX);
   const currentTurnY = Math.floor(fromY / maxY);
-  const desiredSeconds = 72 + Math.random() * 42;
+  const desiredSeconds = 90 + Math.random() * 48;
   let best = null;
 
   for (let stepX = 2; stepX <= 10; stepX += 1) {
@@ -254,7 +254,7 @@ function pickCornerRoute(fromX = state.route?.startX ?? 0, fromY = state.route?.
       const axisBalance = Math.abs(Math.abs(dx / Math.max(1, dy)) - 1.18);
       const score = Math.abs(duration - desiredSeconds) + axisBalance * 5;
 
-      if (duration > 48 && duration < 145 && (!best || score < best.score)) {
+      if (duration > 64 && duration < 185 && (!best || score < best.score)) {
         best = { targetX, targetY, duration, dx, dy, score };
       }
     }
@@ -268,7 +268,7 @@ function pickCornerRoute(fromX = state.route?.startX ?? 0, fromY = state.route?.
     best = {
       targetX,
       targetY,
-      duration: Math.max(54, Math.hypot(dx, dy) / baseSpeed),
+      duration: Math.max(70, Math.hypot(dx, dy) / baseSpeed),
       dx,
       dy
     };
@@ -342,7 +342,7 @@ function triggerCornerHit(x, y) {
 
 function emitWake(dt, centerX, centerY) {
   state.wakeTimer += dt;
-  if (state.wakeTimer < 0.085) return;
+  if (state.wakeTimer < 0.105) return;
   state.wakeTimer = 0;
 
   const floaterBounds = floater.getBoundingClientRect();
@@ -351,15 +351,105 @@ function emitWake(dt, centerX, centerY) {
   const spreadX = -state.directionY * floaterBounds.width * 0.12;
   const spreadY = state.directionX * floaterBounds.height * 0.05;
 
-  addRipple(trailX + spreadX, trailY + spreadY, 0.48, "wake");
-  addRipple(trailX - spreadX, trailY - spreadY, 0.36, "wake");
+  addRipple(trailX + spreadX, trailY + spreadY, 0.42, "wake");
+  addRipple(trailX - spreadX, trailY - spreadY, 0.32, "wake");
 }
 
-function drawWater(dt, centerX, centerY) {
+function drawFloaterInteraction(centerX, centerY, floaterBounds, time) {
+  const width = floaterBounds.width;
+  const height = floaterBounds.height;
+  const angle = Math.atan2(state.directionY, state.directionX) * 0.22 + Math.sin(time * 0.24) * 0.04;
+  const drift = Math.sin(time * 0.7) * height * 0.012;
+  const sideX = -state.directionY;
+  const sideY = state.directionX;
+  const frontX = centerX + state.directionX * width * 0.22;
+  const frontY = centerY + state.directionY * height * 0.18;
+  const backX = centerX - state.directionX * width * 0.3;
+  const backY = centerY - state.directionY * height * 0.23;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  for (let i = 0; i < 7; i += 1) {
+    const t = i / 7;
+    const wobble = Math.sin(time * 0.74 + i * 1.7);
+    const rx = width * (0.42 + t * 0.28 + wobble * 0.018);
+    const ry = height * (0.23 + t * 0.1 + Math.cos(time * 0.56 + i) * 0.012);
+    const alpha = (1 - t) * 0.07 + 0.014;
+
+    ctx.strokeStyle = `rgba(225, 255, 255, ${alpha})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY + drift, rx, ry, angle, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < 12; i += 1) {
+    const side = i % 2 === 0 ? 1 : -1;
+    const t = i / 11;
+    const along = (t - 0.5) * height * 0.68;
+    const rippleX = centerX + state.directionX * along * 0.28 + sideX * side * width * (0.5 + Math.sin(time * 0.8 + i) * 0.025);
+    const rippleY = centerY + state.directionY * along * 0.2 + sideY * side * height * 0.065;
+    const rx = width * (0.09 + t * 0.04);
+    const ry = height * (0.018 + t * 0.012);
+    const alpha = 0.06 + Math.sin(time * 1.1 + i) * 0.018;
+
+    ctx.strokeStyle = `rgba(231, 255, 255, ${alpha})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(rippleX, rippleY, rx, ry, angle + side * 0.32, 0.14 * Math.PI, 1.32 * Math.PI);
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < 9; i += 1) {
+    const t = i / 8;
+    const pulse = 0.5 + Math.sin(time * 0.9 + i * 1.3) * 0.5;
+    const x = backX + sideX * (t - 0.5) * width * 0.76 + Math.sin(time * 0.6 + i) * 6;
+    const y = backY + sideY * (t - 0.5) * height * 0.12 + Math.cos(time * 0.5 + i) * 5;
+
+    ctx.fillStyle = `rgba(226, 255, 255, ${0.025 + pulse * 0.045})`;
+    ctx.beginPath();
+    ctx.arc(x, y, 1.4 + pulse * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const bowGlow = ctx.createRadialGradient(frontX, frontY, 0, frontX, frontY, Math.max(width, height) * 0.36);
+  bowGlow.addColorStop(0, "rgba(210, 255, 255, 0.115)");
+  bowGlow.addColorStop(0.42, "rgba(95, 230, 255, 0.04)");
+  bowGlow.addColorStop(1, "rgba(95, 230, 255, 0)");
+  ctx.fillStyle = bowGlow;
+  ctx.fillRect(frontX - width, frontY - height * 0.45, width * 2, height * 0.9);
+
+  ctx.restore();
+}
+
+function drawWater(dt, centerX, centerY, floaterBounds) {
   ctx.clearRect(0, 0, state.width, state.height);
 
   const time = performance.now() * 0.001;
   ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+
+  for (let i = 0; i < 34; i += 1) {
+    const y = ((i / 34) * (state.height + 84) + Math.sin(time * 0.22 + i * 1.4) * 28 - 42) % (state.height + 84);
+    const alpha = 0.016 + Math.sin(time * 0.52 + i * 0.37) * 0.006;
+    ctx.strokeStyle = `rgba(0, 55, 88, ${alpha})`;
+    ctx.lineWidth = 3.4;
+    ctx.beginPath();
+
+    for (let x = -90; x <= state.width + 90; x += 34) {
+      const wave = Math.sin(x * 0.011 + time * 0.62 + i * 0.7) * 11;
+      const cross = Math.cos(x * 0.017 - time * 0.38 + i) * 5;
+      if (x === -90) {
+        ctx.moveTo(x, y + wave + cross);
+      } else {
+        ctx.lineTo(x, y + wave + cross);
+      }
+    }
+
+    ctx.stroke();
+  }
+
   ctx.globalCompositeOperation = "screen";
 
   const fieldGradient = ctx.createRadialGradient(
@@ -370,22 +460,22 @@ function drawWater(dt, centerX, centerY) {
     state.height * 0.42,
     Math.max(state.width, state.height) * 0.72
   );
-  fieldGradient.addColorStop(0, "rgba(210, 253, 255, 0.075)");
-  fieldGradient.addColorStop(0.42, "rgba(82, 215, 250, 0.034)");
+  fieldGradient.addColorStop(0, "rgba(210, 253, 255, 0.12)");
+  fieldGradient.addColorStop(0.42, "rgba(82, 215, 250, 0.06)");
   fieldGradient.addColorStop(1, "rgba(0, 92, 145, 0)");
   ctx.fillStyle = fieldGradient;
   ctx.fillRect(0, 0, state.width, state.height);
 
-  for (let i = 0; i < 38; i += 1) {
-    const y = ((i / 38) * (state.height + 70) + Math.sin(time * 0.14 + i) * 18 - 35) % (state.height + 70);
-    const alpha = 0.016 + Math.sin(time * 0.38 + i * 0.41) * 0.006;
+  for (let i = 0; i < 62; i += 1) {
+    const y = ((i / 62) * (state.height + 86) + Math.sin(time * 0.2 + i) * 24 - 43) % (state.height + 86);
+    const alpha = 0.023 + Math.sin(time * 0.54 + i * 0.41) * 0.009;
     ctx.strokeStyle = `rgba(213, 252, 255, ${alpha})`;
     ctx.lineWidth = 1;
     ctx.beginPath();
 
     for (let x = -70; x <= state.width + 70; x += 26) {
-      const wave = Math.sin(x * 0.012 + time * 0.48 + i * 0.63) * 7;
-      const drift = Math.cos(x * 0.006 + time * 0.2 + i) * 12;
+      const wave = Math.sin(x * 0.013 + time * 0.72 + i * 0.63) * 8;
+      const drift = Math.cos(x * 0.007 + time * 0.34 + i) * 13;
       if (x === -70) {
         ctx.moveTo(x, y + wave + drift);
       } else {
@@ -396,16 +486,16 @@ function drawWater(dt, centerX, centerY) {
     ctx.stroke();
   }
 
-  for (let i = 0; i < 30; i += 1) {
-    const x = ((i / 30) * (state.width + 90) + Math.cos(time * 0.12 + i) * 22 - 45) % (state.width + 90);
-    const alpha = 0.01 + Math.sin(time * 0.32 + i * 0.33) * 0.005;
+  for (let i = 0; i < 54; i += 1) {
+    const x = ((i / 54) * (state.width + 108) + Math.cos(time * 0.17 + i) * 28 - 54) % (state.width + 108);
+    const alpha = 0.015 + Math.sin(time * 0.46 + i * 0.33) * 0.007;
     ctx.strokeStyle = `rgba(185, 246, 255, ${alpha})`;
     ctx.lineWidth = 1;
     ctx.beginPath();
 
     for (let y = -80; y <= state.height + 80; y += 30) {
-      const wave = Math.sin(y * 0.01 + time * 0.42 + i * 0.5) * 9;
-      const drift = Math.cos(y * 0.005 + time * 0.18 + i) * 10;
+      const wave = Math.sin(y * 0.011 + time * 0.62 + i * 0.5) * 10;
+      const drift = Math.cos(y * 0.006 + time * 0.28 + i) * 11;
       if (y === -80) {
         ctx.moveTo(x + wave + drift, y);
       } else {
@@ -416,29 +506,78 @@ function drawWater(dt, centerX, centerY) {
     ctx.stroke();
   }
 
-  for (let i = 0; i < 80; i += 1) {
+  for (let i = 0; i < 170; i += 1) {
     const phase = i * 19.17;
-    const x = ((Math.sin(phase) * 0.5 + 0.5) * state.width + time * (4 + (i % 4)) + i * 23) % state.width;
-    const y = ((Math.cos(phase * 1.7) * 0.5 + 0.5) * state.height + time * (2 + (i % 5)) + i * 13) % state.height;
-    const pulse = 0.5 + Math.sin(time * 0.85 + i) * 0.5;
-    ctx.fillStyle = `rgba(226, 255, 255, ${0.012 + pulse * 0.024})`;
+    const x = ((Math.sin(phase) * 0.5 + 0.5) * state.width + time * (7 + (i % 6)) + i * 23) % state.width;
+    const y = ((Math.cos(phase * 1.7) * 0.5 + 0.5) * state.height + time * (4 + (i % 7)) + i * 13) % state.height;
+    const pulse = 0.5 + Math.sin(time * 1.28 + i) * 0.5;
+    ctx.fillStyle = `rgba(226, 255, 255, ${0.014 + pulse * 0.04})`;
     ctx.beginPath();
     ctx.arc(x, y, 0.8 + pulse * 1.8, 0, Math.PI * 2);
     ctx.fill();
   }
 
+  for (let i = 0; i < 28; i += 1) {
+    const y = ((i / 28) * state.height + time * 13 + Math.sin(i) * 40) % state.height;
+    const alpha = 0.016 + Math.sin(time * 0.86 + i) * 0.009;
+    const gradient = ctx.createLinearGradient(0, y - 34, state.width, y + 34);
+    gradient.addColorStop(0, "rgba(255, 255, 255, 0)");
+    gradient.addColorStop(0.5, `rgba(220, 255, 255, ${alpha})`);
+    gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 1.35;
+    ctx.beginPath();
+
+    for (let x = -40; x <= state.width + 40; x += 44) {
+      const wave = Math.sin(x * 0.019 + time * 0.82 + i) * 17;
+      const localY = y + wave + Math.cos(x * 0.007 + time * 0.5) * 13;
+      if (x === -40) {
+        ctx.moveTo(x, localY);
+      } else {
+        ctx.lineTo(x, localY);
+      }
+    }
+
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < 26; i += 1) {
+    const offset = (i / 26) * (state.width + state.height);
+    const alpha = 0.011 + Math.sin(time * 0.72 + i * 0.8) * 0.006;
+    ctx.strokeStyle = `rgba(235, 255, 255, ${alpha})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+
+    for (let s = -90; s <= state.width + state.height + 90; s += 42) {
+      const x = s - state.height * 0.35;
+      const y = (offset - s + time * 10) % (state.height + 120) - 60;
+      const wave = Math.sin(s * 0.016 + time * 0.74 + i) * 14;
+      const px = x + wave;
+      const py = y + Math.cos(s * 0.01 + time * 0.46 + i) * 10;
+      if (s === -90) {
+        ctx.moveTo(px, py);
+      } else {
+        ctx.lineTo(px, py);
+      }
+    }
+
+    ctx.stroke();
+  }
+
   const glow = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, Math.max(80, state.width * 0.16));
-  glow.addColorStop(0, "rgba(210, 254, 255, 0.1)");
-  glow.addColorStop(0.4, "rgba(73, 212, 247, 0.052)");
+  glow.addColorStop(0, "rgba(210, 254, 255, 0.13)");
+  glow.addColorStop(0.4, "rgba(73, 212, 247, 0.066)");
   glow.addColorStop(1, "rgba(73, 212, 247, 0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, state.width, state.height);
+
+  drawFloaterInteraction(centerX, centerY, floaterBounds, time);
 
   for (const ripple of state.ripples) {
     ripple.age += dt;
     const t = clamp(ripple.age / ripple.life, 0, 1);
     const radius = ripple.radius + ripple.speed * t;
-    const alpha = (1 - t) * 0.35 * ripple.strength;
+    const alpha = (1 - t) * 0.42 * ripple.strength;
     const squeeze = ripple.kind === "wake" ? 0.58 + Math.sin(time * 1.2 + ripple.wobble) * 0.05 : 0.78;
 
     ctx.save();
@@ -446,7 +585,7 @@ function drawWater(dt, centerX, centerY) {
     ctx.scale(1, squeeze);
     ctx.rotate(Math.sin(time * 0.65 + ripple.wobble) * 0.12);
     ctx.strokeStyle = `rgba(226, 255, 255, ${alpha})`;
-    ctx.lineWidth = ripple.kind === "corner" ? 2 : 1.35;
+    ctx.lineWidth = ripple.kind === "corner" ? 2 : 1.15;
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.stroke();
@@ -525,7 +664,7 @@ function updateFrame(timestamp) {
     const floaterBounds = floater.getBoundingClientRect();
     const centerX = state.x + floaterBounds.width / 2;
     const centerY = state.y + floaterBounds.height / 2;
-    const tilt = clamp(state.directionX * 2.8 + Math.sin(timestamp * 0.0009) * 1.3, -4.5, 4.5);
+    const tilt = clamp(state.directionX * 2.1 + Math.sin(timestamp * 0.00072) * 1.05, -3.6, 3.6);
 
     floater.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) rotate(${tilt}deg)`;
     emitWake(dt, centerX, centerY);
@@ -543,10 +682,10 @@ function updateFrame(timestamp) {
       pickCornerRoute(unfoldedX, unfoldedY);
     }
 
-    drawWater(dt, centerX, centerY);
+    drawWater(dt, centerX, centerY, floaterBounds);
   } else {
     const floaterBounds = floater.getBoundingClientRect();
-    drawWater(dt, state.x + floaterBounds.width / 2, state.y + floaterBounds.height / 2);
+    drawWater(dt, state.x + floaterBounds.width / 2, state.y + floaterBounds.height / 2, floaterBounds);
   }
 
   requestAnimationFrame(updateFrame);

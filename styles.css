@@ -108,12 +108,12 @@ button {
     drop-shadow(0 17px 18px rgba(0, 26, 37, 0.36))
     drop-shadow(0 3px 1px rgba(255, 255, 255, 0.12));
   transform-origin: 50% 55%;
-  animation: bob 6.4s ease-in-out infinite;
+  animation: bob 7.8s ease-in-out infinite;
   user-select: none;
 }
 
 .floater.bump .raft {
-  animation: bob 6.4s ease-in-out infinite, bump 360ms ease-out 1;
+  animation: bob 7.8s ease-in-out infinite, bump 420ms ease-out 1;
 }
 
 .corner-flash {
@@ -326,10 +326,10 @@ body.is-paused .screensaver::after {
 @keyframes bob {
   0%,
   100% {
-    transform: translateY(-0.65%) rotate(-0.8deg);
+    transform: translateY(-0.5%) rotate(-0.65deg);
   }
   50% {
-    transform: translateY(0.75%) rotate(0.8deg);
+    transform: translateY(0.62%) rotate(0.65deg);
   }
 }
 
@@ -347,13 +347,13 @@ body.is-paused .screensaver::after {
 
 @keyframes bump {
   0% {
-    transform: translateY(-0.65%) scale(1) rotate(-0.8deg);
+    transform: translateY(-0.5%) scale(1) rotate(-0.65deg);
   }
   42% {
-    transform: translateY(0.9%) scale(0.985, 1.015) rotate(2.2deg);
+    transform: translateY(0.72%) scale(0.99, 1.01) rotate(1.65deg);
   }
   100% {
-    transform: translateY(-0.65%) scale(1) rotate(-0.8deg);
+    transform: translateY(-0.5%) scale(1) rotate(-0.65deg);
   }
 }
 
